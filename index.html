@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArchVision AI - Архітектурний Аналізатор</title>
+    
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1E0000 0%, #500805 50%, #9D331F 100%);
+            min-height: 100vh;
+            color: #BC6D4F;
+        }
+        
+        .header {
+            background: rgba(188, 109, 79, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(188, 109, 79, 0.3);
+        }
+        
+        .header h1 {
+            color: #BC6D4F;
+            font-size: 2.5em;
+            font-weight: 300;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(30, 0, 0, 0.5);
+        }
+        
+        .header p {
+            color: rgba(188, 109, 79, 0.8);
+            font-size: 1.1em;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        
+        .upload-section {
+            background: rgba(30, 0, 0, 0.8);
+            border: 1px solid rgba(188, 109, 79, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .drop-zone {
+            border: 3px dashed #9D331F;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(157, 51, 31, 0.1);
+        }
+        
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #BC6D4F;
+            background: rgba(188, 109, 79, 0.2);
+        }
+        
+        .drop-zone i {
+            font-size: 3em;
+            display: block;
+            margin-bottom: 15px;
+            color: #BC6D4F;
+        }
+        
+        .drop-zone p {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #BC6D4F;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #9D331F, #BC6D4F);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(157, 51, 31, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #BC6D4F;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(188, 109, 79, 0.2);
+            border-top: 4px solid #BC6D4F;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result-card {
+            background: rgba(30, 0, 0, 0.8);
+            border: 1px solid rgba(188, 109, 79, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            color: #BC6D4F;
+        }
+        
+        .result-card h3 {
+            color: #BC6D4F;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 1px solid rgba(188, 109, 79, 0.3);
+            padding-bottom: 10px;
+        }
+        
+        .gemini-card {
+            background: linear-gradient(135deg, rgba(80, 8, 5, 0.9) 0%, rgba(157, 51, 31, 0.9) 100%);
+            border-left: 4px solid #BC6D4F;
+        }
+        
+        .local-model-card {
+            background: linear-gradient(135deg, rgba(157, 51, 31, 0.9) 0%, rgba(188, 109, 79, 0.9) 100%);
+            border-left: 4px solid #9D331F;
+        }
+        
+        .map-card {
+            background: linear-gradient(135deg, rgba(30, 0, 0, 0.95) 0%, rgba(80, 8, 5, 0.95) 100%);
+            border-left: 4px solid #BC6D4F;
+            border: 1px solid rgba(188, 109, 79, 0.3);
+        }
+        
+        .region-list, .building-list {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .region-list li, .building-list li {
+            margin: 8px 0;
+            color: rgba(188, 109, 79, 0.9);
+            line-height: 1.4;
+        }
+        
+        .building-marker {
+            background: none !important;
+            border: none !important;
+            font-size: 16px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .info-item {
+            background: rgba(188, 109, 79, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(188, 109, 79, 0.2);
+        }
+        
+        .confidence-bar {
+            background: rgba(30, 0, 0, 0.5);
+            border-radius: 10px;
+            height: 8px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .confidence-fill {
+            background: linear-gradient(90deg, #9D331F, #BC6D4F);
+            height: 100%;
+            border-radius: 10px;
+        }
+
+        .building-marker {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #4CAF50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+        
+        .building-marker:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            transition: width 0.5s ease;
+        }
+        
+        .error {
+            background: rgba(157, 51, 31, 0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #BC6D4F;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(188, 109, 79, 0.2);
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        /* Стили для карты */
+        .map-section {
+            background: rgba(30, 0, 0, 0.8);
+            border: 1px solid rgba(188, 109, 79, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .map-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(188, 109, 79, 0.3);
+        }
+        
+        .map-header h3 {
+            color: #BC6D4F;
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+        
+        
+        .wiki-btn {
+            background: linear-gradient(45deg, #2980b9, #3498db);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            cursor: pointer;
+            margin-left: 8px;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        
+        .wiki-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.4);
+        }
+        
+        .building-marker {
+            text-align: center;
+            font-size: 24px;
+            line-height: 30px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid #ff7800;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        #architecturalMap {
+            height: 400px;
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .map-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(188, 109, 79, 0.1);
+            border-radius: 10px;
+            border-left: 4px solid #BC6D4F;
+            color: #BC6D4F;
+        }
+        
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .map-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <h1>🏛️ ArchVision AI</h1>
+            <p>Універсальний архітектурний аналізатор</p>
+        </div>
+        
+        <div class="container">
+            <!-- Информация о поддерживаемых стилях -->
+            <div class="result-card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(157, 51, 31, 0.1) 0%, rgba(188, 109, 79, 0.1) 100%); border-left: 4px solid #BC6D4F;">
+                <h3>🎨 Підтримувані архітектурні стилі</h3>
+                <div class="info-item" style="margin-bottom: 15px;">
+                    <p><strong>⚠️ Важливо:</strong> Система розпізнає лише 25 архітектурних стилів. Якщо ваше зображення містить інший стиль, результат може бути неточним.</p>
+                </div>
+                
+                <details style="margin-top: 15px;">
+                    <summary style="cursor: pointer; font-weight: bold; padding: 10px; background: rgba(188, 109, 79, 0.1); border-radius: 5px;">
+                        🔽 Показати всі 25 підтримуваних стилів
+                    </summary>
+                    <div style="margin-top: 15px; columns: 2; column-gap: 20px;">
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Американський ремісничий стиль</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Баухаус</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Палладіанська архітектура</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Деконструктивізм</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Георгіанська архітектура</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Романський стиль</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Грецьке відродження</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Американський чотирикутний стиль</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Візантійська архітектура</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Постмодернізм</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Ар-нуво</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Ар-деко</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Російське відродження</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Едвардіанська архітектура</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Ахеменідська архітектура</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Оригінальна архітектура</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Бароко</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Колоніальна архітектура</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Давньоєгипетська архітектура</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Тюдорівське відродження</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Архітектура королеви Анни</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Чикагська школа</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Готика</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Міжнародний стиль</li>
+                            <li style="padding: 5px 0; border-bottom: 1px solid rgba(188, 109, 79, 0.2);">• Боз-ар</li>
+                        </ul>
+                    </div>
+                    <div style="margin-top: 15px; padding: 10px; background: rgba(188, 109, 79, 0.1); border-radius: 5px;">
+                        <small><strong>Модель:</strong> FastAI ResNet-50 з точністю 95% на тренувальному наборі</small><br>
+                        <small><strong>Джерело:</strong> dumitrux/architectural-style-recognition</small>
+                    </div>
+                </details>
+            </div>
+            
+            <div class="upload-section">
+                <div 
+                    class="drop-zone" 
+                    :class="{ dragover: isDragOver }"
+                    @click="$refs.fileInput.click()"
+                    @dragover.prevent="isDragOver = true"
+                    @dragleave="isDragOver = false"
+                    @drop.prevent="handleFileDrop"
+                >
+                    <div v-if="!selectedFile">
+                        <i>📸</i>
+                        <p>Перетягніть фото архітектури сюди</p>
+                        <small>або натисніть для вибору файлу</small>
+                        <small style="display: block; margin-top: 10px;">Підтримувані формати: JPG, PNG, WEBP</small>
+                    </div>
+                    <div v-else>
+                        <img :src="imagePreview" style="max-width: 100%; max-height: 200px; border-radius: 10px;">
+                        <p style="margin-top: 10px;">✅ Зображення завантажено: {{ selectedFile.name }}</p>
+                    </div>
+                </div>
+                
+                <input 
+                    type="file" 
+                    ref="fileInput" 
+                    accept="image/*" 
+                    style="display: none;"
+                    @change="handleFileSelect"
+                >
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button 
+                        class="btn" 
+                        :disabled="!selectedFile || isLoading"
+                        @click="analyzeImage"
+                    >
+                        🔍 {{ isLoading ? 'Аналізуємо...' : 'Почати аналіз' }}
+                    </button>
+                </div>
+                
+                <div v-if="isLoading" class="loading">
+                    <div class="spinner"></div>
+                    <p><strong>Аналізуємо архітектуру...</strong></p>
+                    <p>🤖 Запуск Gemini API та локальних моделей...</p>
+                </div>
+                
+                <div v-if="errorMessage" class="error">
+                    {{ errorMessage }}
+                </div>
+            </div>
+            
+            <!-- Результаты анализа -->
+            <div v-if="analysisResults">
+                <!-- FastAI Model - Main Result -->
+                <div v-if="analysisResults.architectural_style" class="result-card local-model-card">
+                    <h3>🏗️ Архітектурний стиль</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>🏛️ Стиль:</strong><br>
+                            {{ analysisResults.architectural_style.top_prediction?.style_uk || analysisResults.architectural_style.top_prediction?.style || 'Не визначено' }}
+                        </div>
+                        <div class="info-item">
+                            <strong>📊 Впевненість:</strong><br>
+                            {{ Math.round((analysisResults.architectural_style.top_prediction?.confidence || 0) * 100) }}%
+                        </div>
+                        <div class="info-item">
+                            <strong>🎯 Модель:</strong><br>
+                            {{ analysisResults.architectural_style.model || 'stage-2-resnet50-deploy.pkl' }}
+                        </div>
+                        <div class="info-item">
+                            <strong>🎨 Підтримується стилів:</strong><br>
+                            {{ analysisResults.architectural_style.total_styles || '25' }}
+                        </div>
+                    </div>
+                    <div class="confidence-bar" style="margin-top: 10px;">
+                        <div 
+                            class="confidence-fill" 
+                            :style="{ width: Math.round((analysisResults.architectural_style.top_prediction?.confidence || 0) * 100) + '%' }"
+                        ></div>
+                    </div>
+                    <div v-if="analysisResults.architectural_style.all_predictions" style="margin-top: 20px;">
+                        <strong>📊 Топ-3 прогнозів:</strong>
+                        <ul class="feature-list">
+                            <li v-for="pred in analysisResults.architectural_style.all_predictions.slice(0, 3)" :key="pred.style">
+                                {{ pred.style_uk || pred.style }}: {{ Math.round((pred.confidence || 0) * 100) }}%
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Gemini результати -->
+                <div v-if="analysisResults.gemini_analysis" class="result-card gemini-card">
+                    <h3>🤖 Google Gemini Аналіз</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>🏛️ Пам'ятник:</strong><br>
+                            {{ analysisResults.gemini_analysis.landmark_name || 'Не визначено' }}
+                        </div>
+                        <div class="info-item">
+                            <strong>🎨 Стиль:</strong><br>
+                            {{ analysisResults.gemini_analysis.architectural_style || 'Не визначено' }}
+                        </div>
+                        <div class="info-item">
+                            <strong>📍 Місцезнаходження:</strong><br>
+                            <span v-if="analysisResults.gemini_analysis.location">
+                                {{ analysisResults.gemini_analysis.location.city || '' }}
+                                {{ analysisResults.gemini_analysis.location.country ? ', ' + analysisResults.gemini_analysis.location.country : '' }}
+                            </span>
+                            <span v-else>Не визначено</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>📅 Період:</strong><br>
+                            {{ analysisResults.gemini_analysis.period || 'Не визначено' }}
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <strong>🎯 Впевненість Gemini: {{ Math.round((analysisResults.gemini_analysis.confidence || 0) * 100) }}%</strong>
+                        <div class="confidence-bar">
+                            <div 
+                                class="confidence-fill" 
+                                :style="{ width: Math.round((analysisResults.gemini_analysis.confidence || 0) * 100) + '%' }"
+                            ></div>
+                        </div>
+                    </div>
+                    
+                    <div v-if="analysisResults.gemini_analysis.key_features" style="margin-top: 20px;">
+                        <strong>🔍 Ключові ознаки:</strong>
+                        <ul class="feature-list">
+                            <li v-for="feature in analysisResults.gemini_analysis.key_features" :key="feature">
+                                {{ feature }}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- ArchVision VLM (deprecated) -->
+                <div v-if="analysisResults.archvision_vlm_analysis" class="result-card">
+                    <h3>🏗️ ArchVision VLM Аналіз (застаріло)</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>🏛️ Стиль:</strong><br>
+                            {{ analysisResults.archvision_vlm_analysis.architectural_style || 'Не визначено' }}
+                            <button v-if="analysisResults.archvision_vlm_analysis.architectural_style && wikipediaLinks[analysisResults.archvision_vlm_analysis.architectural_style]" 
+                                    class="wiki-btn" 
+                                    @click="openWikipedia(analysisResults.archvision_vlm_analysis.architectural_style)" 
+                                    title="Відкрити в Українській Вікіпедії">
+                                🗺️ Вікі
+                            </button>
+                        </div>
+                        <div class="info-item">
+                            <strong>📊 Впевненість:</strong><br>
+                            {{ Math.round((analysisResults.archvision_vlm_analysis.confidence || 0) * 100) }}%
+                        </div>
+                    </div>
+                    <div class="confidence-bar" style="margin-top: 10px;">
+                        <div 
+                            class="confidence-fill" 
+                            :style="{ width: Math.round((analysisResults.archvision_vlm_analysis.confidence || 0) * 100) + '%' }"
+                        ></div>
+                    </div>
+                </div>
+                
+                <!-- ArchiLense API -->
+                <div v-if="analysisResults.archilense_analysis" class="result-card">
+                    <h3>🏛️ ArchiLense Аналіз</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>🎨 Стиль:</strong><br>
+                            {{ analysisResults.archilense_analysis.style || 'Не визначено' }}
+                            <button v-if="analysisResults.archilense_analysis.style && wikipediaLinks[analysisResults.archilense_analysis.style]" 
+                                    class="wiki-btn" 
+                                    @click="openWikipedia(analysisResults.archilense_analysis.style)" 
+                                    title="Открыть в Украинской Википедии">
+                                🗺️ Вікі
+                            </button>
+                        </div>
+                        <div class="info-item">
+                            <strong>⏰ Період:</strong><br>
+                            {{ analysisResults.archilense_analysis.period || 'Не визначено' }}
+                        </div>
+                        <div class="info-item">
+                            <strong>🌍 Культура:</strong><br>
+                            {{ analysisResults.archilense_analysis.culture || 'Не визначено' }}
+                        </div>
+                        <div class="info-item">
+                            <strong>📍 Місце:</strong><br>
+                            {{ analysisResults.archilense_analysis.location || 'Не визначено' }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Локальні моделі -->
+                <div v-if="analysisResults.architectural_style" class="result-card local-model-card">
+                    <h3>🤖 Комбінований VLM Аналіз</h3>
+                    <div v-if="analysisResults.architectural_style.predictions && Object.values(analysisResults.architectural_style.predictions)[0]?.source" 
+                         style="font-size: 0.9em; color: #007acc; margin-bottom: 10px;">
+                        <strong>📡 Джерело:</strong> {{ Object.values(analysisResults.architectural_style.predictions)[0].source }}
+                        <span v-if="Object.values(analysisResults.architectural_style.predictions)[0]?.vlm_count">
+                            ({{ Object.values(analysisResults.architectural_style.predictions)[0].vlm_count }} VLM)
+                        </span>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>🎨 Топ-прогноз:</strong><br>
+                            {{ analysisResults.architectural_style.top_prediction?.style_uk || analysisResults.architectural_style.top_prediction?.style || 'Не визначено' }}
+                            <button v-if="analysisResults.architectural_style.top_prediction?.style_uk" 
+                                    class="wiki-btn" 
+                                    @click="openWikipedia(analysisResults.architectural_style.top_prediction.style_uk)" 
+                                    title="Відкрити в Українській Вікіпедії">
+                                🗺️ Вікі
+                            </button>
+                        </div>
+                        <div class="info-item">
+                            <strong>🎯 Впевненість:</strong><br>
+                            {{ Math.round((analysisResults.architectural_style.confidence || 0) * 100) }}%
+                        </div>
+                    </div>
+                    
+                    <div class="confidence-bar">
+                        <div 
+                            class="confidence-fill" 
+                            :style="{ width: Math.round((analysisResults.architectural_style.confidence || 0) * 100) + '%' }"
+                        ></div>
+                    </div>
+                    
+                    <div v-if="analysisResults.architectural_style.predictions" style="margin-top: 20px;">
+                        <strong>📊 Всі прогнози:</strong>
+                        <ul class="feature-list">
+                            <li v-for="(conf, style) in Object.entries(analysisResults.architectural_style.predictions).slice(0, 5)" :key="style">
+                                {{ style }}: {{ Math.round((conf[1].probability || conf[1]) * 100) }}%
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                
+                <!-- Верифікація -->
+                <div v-if="analysisResults.verification" class="result-card">
+                    <h3>🔍 Верифікація Результатів</h3>
+                    <div class="info-grid">
+                        <div class="info-item" style="text-align: center;">
+                            <strong>Якість</strong><br>
+                            <span style="font-size: 1.2em;">{{ getQualityText(analysisResults.verification.overall_quality) }}</span>
+                        </div>
+                        <div class="info-item" style="text-align: center;">
+                            <strong>Узгодженість</strong><br>
+                            <span style="font-size: 1.2em;">{{ Math.round(analysisResults.verification.consistency_score * 100) }}%</span>
+                        </div>
+                        <div class="info-item" style="text-align: center;">
+                            <strong>Впевненість</strong><br>
+                            <span style="font-size: 1.2em;">{{ analysisResults.verification.confidence_level || 'N/A' }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Географічна карта архітектурного стилю - в самому низу -->
+                <div v-if="analysisResults.geographical_data && (analysisResults.geographical_data.regions && analysisResults.geographical_data.regions.length > 0 || analysisResults.geographical_data.famous_buildings && analysisResults.geographical_data.famous_buildings.length > 0)" class="result-card map-card">
+                    <h3>🗺️ Географічна карта архітектурного стилю</h3>
+                    <div id="architectural-map" style="height: 400px; width: 100%; border-radius: 10px; margin-top: 15px;"></div>
+                    
+                    <div style="margin-top: 15px;">
+                        <div v-if="analysisResults.geographical_data.regions && analysisResults.geographical_data.regions.length > 0">
+                            <strong>🌍 Регіони поширення:</strong>
+                            <ul class="region-list">
+                                <li v-for="region in analysisResults.geographical_data.regions" :key="region.name">
+                                    <strong>{{ region.name }}</strong> - {{ region.description }}
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div v-if="analysisResults.geographical_data.famous_buildings && analysisResults.geographical_data.famous_buildings.length > 0" style="margin-top: 15px;">
+                            <strong>🏛️ Знамениті пам'ятники:</strong>
+                            <ul class="building-list">
+                                <li v-for="building in analysisResults.geographical_data.famous_buildings" :key="building.name">
+                                    <strong>{{ building.name }}</strong> - {{ building.description }}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    
+    <script>
+        window.addEventListener('load', function() {
+            const { createApp } = Vue;
+            
+            createApp({
+            data() {
+                return {
+                    selectedFile: null,
+                    imagePreview: null,
+                    isDragOver: false,
+                    isLoading: false,
+                    errorMessage: null,
+                    analysisResults: null,
+                    showMap: false,
+                    mapInfoText: 'Завантажуємо дані карти...',
+                    architecturalMap: null,
+                    styleRegions: {},
+                    wikipediaLinks: {
+                        // Українські назви стилів з посиланнями на Українську Вікіпедію
+                        'Ахеменідська архітектура': 'https://uk.wikipedia.org/wiki/Ахеменідська_архітектура',
+                        'Американський ремісничий стиль': 'https://uk.wikipedia.org/wiki/Американський_ремісничий_стиль',
+                        'Американська чотирикутна архітектура': 'https://uk.wikipedia.org/wiki/American_Foursquare',
+                        'Давньоєгипетська архітектура': 'https://uk.wikipedia.org/wiki/Давньоєгипетська_архітектура',
+                        'Ар-деко': 'https://uk.wikipedia.org/wiki/Ар-деко',
+                        'Архітектура модерн': 'https://uk.wikipedia.org/wiki/Модерн',
+                        'Бароко': 'https://uk.wikipedia.org/wiki/Бароко',
+                        'Баухаус': 'https://uk.wikipedia.org/wiki/Баухаус',
+                        'Боз-Ар': 'https://uk.wikipedia.org/wiki/Боз-ар',
+                        'Візантійська архітектура': 'https://uk.wikipedia.org/wiki/Візантійська_архітектура',
+                        'Чиказька школа архітектури': 'https://uk.wikipedia.org/wiki/Чиказька_школа_архітектури',
+                        'Колоніальна архітектура': 'https://uk.wikipedia.org/wiki/Колоніальна_архітектура',
+                        'Деконструктивізм': 'https://uk.wikipedia.org/wiki/Деконструктивізм',
+                        'Едвардіанська архітектура': 'https://uk.wikipedia.org/wiki/Едвардіанська_архітектура',
+                        'Георгіанська архітектура': 'https://uk.wikipedia.org/wiki/Георгіанська_архітектура',
+                        'Готика': 'https://uk.wikipedia.org/wiki/Готика',
+                        'Грецьке відродження': 'https://uk.wikipedia.org/wiki/Грецьке_відродження',
+                        'Інтернаціональний стиль': 'https://uk.wikipedia.org/wiki/Інтернаціональний_стиль',
+                        'Новаторська архітектура': 'https://uk.wikipedia.org/wiki/Новаторська_архітектура',
+                        'Палладіанська архітектура': 'https://uk.wikipedia.org/wiki/Палладіанський_стиль',
+                        'Постмодернізм': 'https://uk.wikipedia.org/wiki/Постмодернізм',
+                        'Архітектура королеви Анни': 'https://uk.wikipedia.org/wiki/Архітектура_королеви_Анни',
+                        'Романський стиль': 'https://uk.wikipedia.org/wiki/Романський_стиль',
+                        'Російське відродження': 'https://uk.wikipedia.org/wiki/Російське_відродження',
+                        'Тюдорівське відродження': 'https://uk.wikipedia.org/wiki/Тюдорівське_відродження'
+                    },
+                    currentDetectedStyle: null
+                }
+            },
+            methods: {
+                handleFileSelect(event) {
+                    console.log('🔥 ФРОНТ: handleFileSelect викликано');
+                    const files = event.target.files;
+                    console.log('🔥 ФРОНТ: кількість файлів =', files.length);
+                    if (files.length > 0) {
+                        console.log('🔥 ФРОНТ: файл знайдено:', files[0].name, files[0].type, files[0].size);
+                        this.handleFile(files[0]);
+                    }
+                },
+                
+                handleFileDrop(event) {
+                    console.log('🔥 ФРОНТ: handleFileDrop викликано');
+                    this.isDragOver = false;
+                    const files = event.dataTransfer.files;
+                    console.log('🔥 ФРОНТ: перетягнуто файлів =', files.length);
+                    if (files.length > 0) {
+                        console.log('🔥 ФРОНТ: перетягнутий файл:', files[0].name, files[0].type, files[0].size);
+                        this.handleFile(files[0]);
+                    }
+                },
+                
+                handleFile(file) {
+                    console.log('🔥 ФРОНТ: handleFile викликано з файлом:', file.name, file.type, file.size);
+                    
+                    if (!file.type.startsWith('image/')) {
+                        console.log('🔥 ФРОНТ: помилка типу файлу:', file.type);
+                        this.errorMessage = 'Будь ласка, оберіть файл зображення';
+                        return;
+                    }
+                    
+                    this.selectedFile = file;
+                    this.errorMessage = null;
+                    console.log('🔥 ФРОНТ: файл збережено в selectedFile');
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        console.log('🔥 ФРОНТ: FileReader успішно завантажив зображення');
+                        this.imagePreview = e.target.result;
+                    };
+                    reader.onerror = (e) => {
+                        console.error('🔥 ФРОНТ: помилка FileReader:', e);
+                    };
+                    reader.readAsDataURL(file);
+                },
+                
+                async analyzeImage() {
+                    console.log('🔥 ФРОНТ: analyzeImage початок');
+                    console.log('🔥 ФРОНТ: selectedFile:', this.selectedFile);
+                    
+                    if (!this.selectedFile) {
+                        console.log('🔥 ФРОНТ: файл не обрано!');
+                        return;
+                    }
+                    
+                    console.log('🔥 ФРОНТ: файл для відправки:', this.selectedFile.name, this.selectedFile.type, this.selectedFile.size);
+                    
+                    this.isLoading = true;
+                    this.errorMessage = null;
+                    this.analysisResults = null;
+                    
+                    const formData = new FormData();
+                    formData.append('file', this.selectedFile);
+                    
+                    console.log('🔥 ФРОНТ: FormData створено, файл додано');
+                    console.log('🔥 ФРОНТ: відправляємо на http://localhost:8002/analyze/full');
+                    
+                    try {
+                        const response = await fetch('http://localhost:8002/analyze/full', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        console.log('🔥 ФРОНТ: отримано response.status:', response.status);
+                        console.log('🔥 ФРОНТ: response.ok:', response.ok);
+                        
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            console.log('🔥 ФРОНТ: текст помилки сервера:', errorText);
+                            throw new Error(`Помилка сервера: ${response.status} - ${errorText}`);
+                        }
+                        
+                        const data = await response.json();
+                        console.log('🔥 ФРОНТ: отримано дані:', data);
+                        
+                        if (data.status === 'success' && data.data) {
+                            console.log('🔥 ФРОНТ: успішний результат');
+                            this.analysisResults = data.data;
+                            
+                            // Детальний дебаг усіх результатів
+                            console.log('📊 РЕЗУЛЬТАТИ АНАЛІЗУ:');
+                            console.log('Gemini:', this.analysisResults.gemini_analysis);
+                            console.log('DeepSeek:', this.analysisResults.deepseek_analysis);
+                            console.log('Nyckel:', this.analysisResults.nyckel_analysis);
+                            console.log('ImageIdentifier:', this.analysisResults.imageidentifier_analysis);
+                            console.log('ArchiLense:', this.analysisResults.archilense_analysis);
+                            console.log('Local models:', this.analysisResults.architectural_style);
+                            console.log('Verification:', this.analysisResults.verification);
+                            
+                            this.showMap = true;
+                            setTimeout(() => {
+                                this.initMap();
+                            }, 100);
+                        } else {
+                            console.log('🔥 ФРОНТ: неуспішний результат або немає даних');
+                            this.errorMessage = 'Не вдалося отримати результати аналізу';
+                        }
+                        
+                    } catch (error) {
+                        console.error('🔥 ФРОНТ: помилка запиту:', error);
+                        this.errorMessage = `Помилка при аналізі зображення: ${error.message}`;
+                    } finally {
+                        console.log('🔥 ФРОНТ: analyzeImage завершено');
+                        this.isLoading = false;
+                    }
+                },
+                
+                getQualityText(quality) {
+                    const qualityMap = {
+                        'excellent': 'Відмінно',
+                        'good': 'Добре',
+                        'fair': 'Задовільно',
+                        'poor': 'Погано'
+                    };
+                    return qualityMap[quality] || quality;
+                },
+                
+                async initializeMap() {
+                    console.log('🗺️ initializeMap викликано');
+                    // Перевіряємо чи контейнер готовий
+                    const mapContainer = document.getElementById('architecturalMap');
+                    if (!mapContainer) {
+                        console.error('Контейнер карти не знайдено');
+                        return;
+                    }
+                    
+                    // Очищаємо стару карту
+                    if (this.architecturalMap) {
+                        this.architecturalMap.off();
+                        this.architecturalMap.remove();
+                        this.architecturalMap = null;
+                    }
+                    
+                    // Очищаємо контейнер
+                    mapContainer.innerHTML = '';
+                    
+                    // Створюємо нову карту без проблемних анімацій
+                    this.architecturalMap = L.map('architecturalMap', {
+                        center: [50.0, 10.0],
+                        zoom: 4,
+                        zoomControl: true,
+                        scrollWheelZoom: true,
+                        zoomAnimation: false,
+                        fadeAnimation: false,
+                        markerZoomAnimation: false
+                    });
+                    
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors',
+                        maxZoom: 18
+                    }).addTo(this.architecturalMap);
+                    
+                    // Додаємо динамічні ареали стилів
+                    await this.addArchitecturalStyleRegions();
+                    await this.showBuildingLocation();
+                    
+                    // Завантажуємо дані Вікіпедії
+                    await this.loadWikipediaLinks();
+                },
+                
+                async addArchitecturalStyleRegions() {
+                    // Отримуємо динамічні дані з API
+                    try {
+                        const response = await fetch('/styles');
+                        const data = await response.json();
+                        
+                        if (data.status === 'success' && data.data.styles) {
+                            this.styleRegions = {};
+                            
+                            // Генеруємо кольори для стилів
+                            const colors = ['#e74c3c', '#9b59b6', '#3498db', '#f39c12', '#27ae60', 
+                                           '#e67e22', '#2ecc71', '#1abc9c', '#34495e', '#95a5a6'];
+                            
+                            data.data.styles.forEach((styleData, index) => {
+                                if (styleData.coordinates && styleData.coordinates.length > 0) {
+                                    this.styleRegions[styleData.style] = {
+                                        centers: styleData.coordinates.map(coord => ({
+                                            lat: coord.lat,
+                                            lng: coord.lon,
+                                            name: coord.region,
+                                            radius: 300000
+                                        })),
+                                        color: colors[index % colors.length]
+                                    };
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Помилка завантаження стилів:', error);
+                        // Fallback до мінімальних даних
+                        this.styleRegions = {
+                            'Готика': {
+                                centers: [{lat: 48.8566, lng: 2.3522, name: 'Західна Європа', radius: 400000}],
+                                color: '#3498db'
+                            },
+                            'Бароко': {
+                                centers: [{lat: 41.9028, lng: 12.4964, name: 'Італія', radius: 300000}],
+                                color: '#9b59b6'
+                            }
+                        };
+                    }
+                    
+                    // Отримуємо поточний стиль з результатів
+                    let currentStyle = null;
+                    if (this.analysisResults) {
+                        // Пробуємо різні джерела стилю
+                        const architecturalStyle = this.analysisResults.architectural_style?.top_prediction;
+                        if (architecturalStyle) {
+                            // Новий формат: об'єкт з полями style та style_uk
+                            currentStyle = architecturalStyle.style || architecturalStyle.style_uk || architecturalStyle;
+                        } else {
+                            // Старий формат: просто строка
+                            currentStyle = this.analysisResults.nyckel_analysis?.style ||
+                                         this.analysisResults.archilense_analysis?.style;
+                        }
+                    }
+                    
+                    // Зберігаємо дані для використання в кнопках
+                    this.currentDetectedStyle = currentStyle;
+                    
+                    // За замовчуванням показуємо тільки основний стиль
+                    this.showOnlyDetectedStyle();
+                },
+                
+                async showBuildingLocation() {
+                    console.log('🗺️ showBuildingLocation викликано');
+                    
+                    // Очищаємо карту правильно
+                    this.clearMapLayers();
+                    
+                    this.mapInfoText = 'Визначаємо місце будівлі через Gemini...';
+                    
+                    // Пробуємо визначити місце будівлі
+                    await this.determineBuildingLocation();
+                },
+                
+                showStyleDistribution() {
+                    // Очищаємо карту правильно
+                    this.clearMapLayers();
+                    
+                    // Показуємо тільки основний стиль
+                    this.showOnlyDetectedStyle();
+                    this.mapInfoText = 'Показано географічне поширення виявленого стилю';
+                },
+                
+                showOnlyDetectedStyle() {
+                    console.log('🎨 showOnlyDetectedStyle викликано');
+                    console.log('currentDetectedStyle:', this.currentDetectedStyle);
+                    console.log('styleRegions:', this.styleRegions);
+                    
+                    if (!this.currentDetectedStyle) {
+                        console.warn('Немає визначеного стилю для показу на карті');
+                        return;
+                    }
+                    
+                    // Додаємо фіксовані історичні ареали стилів (НЕ координати конкретної будівлі)
+                    const historicalStyleAreas = this.getHistoricalStyleArea(this.currentDetectedStyle);
+                    if (historicalStyleAreas && historicalStyleAreas.length > 0) {
+                        console.log('🗺️ Додаємо історичні ареали стилю:', this.currentDetectedStyle);
+                        
+                        historicalStyleAreas.forEach(area => {
+                            // Додаємо великий круг для ареалу стилю
+                            const styleCircle = L.circle([area.lat, area.lng], {
+                                color: '#e74c3c',
+                                fillColor: '#e74c3c',
+                                fillOpacity: 0.15,
+                                radius: area.radius * 1000, // переводимо в метри
+                                weight: 2,
+                                dashArray: '15, 10'
+                            }).addTo(this.architecturalMap);
+                            
+                            styleCircle.bindPopup(`
+                                <strong>Історичний ареал: ${this.currentDetectedStyle}</strong><br>
+                                📍 ${area.name}<br>
+                                📏 Радіус: ${area.radius} км<br>
+                                ℹ️ Область де цей стиль історично поширений
+                            `);
+                        });
+                        
+                        console.log('✅ Історичні ареали стилів додано на карту');
+                    }
+                    
+                    // Потім додаємо стандартні регіони стилів
+                    if (this.styleRegions) {
+                        Object.entries(this.styleRegions).forEach(([styleName, data]) => {
+                            const isCurrentStyle = styleName.toLowerCase() === this.currentDetectedStyle.toLowerCase() ||
+                                                  this.currentDetectedStyle.toLowerCase().includes(styleName.toLowerCase());
+                            
+                            if (isCurrentStyle) {
+                                data.centers.forEach(center => {
+                                    // Додаємо круг для кожного центру
+                                    const circle = L.circle([center.lat, center.lng], {
+                                        color: data.color,
+                                        fillColor: data.color,
+                                        fillOpacity: 0.4,
+                                        radius: center.radius,
+                                        weight: 3
+                                    }).addTo(this.architecturalMap);
+                                    
+                                    // Додаємо підпис
+                                    circle.bindPopup(`
+                                        <strong>${styleName}</strong><br>
+                                        ${center.name}<br>
+                                        ⭐ Виявлений стиль
+                                    `);
+                                    
+                                    // Додаємо маркер
+                                    L.marker([center.lat, center.lng])
+                                        .addTo(this.architecturalMap)
+                                        .bindPopup(`<strong>${center.name}</strong><br>${styleName}`);
+                                });
+                            }
+                        });
+                    }
+                },
+                
+                getHistoricalStyleArea(styleName) {
+                    // Перевіряємо, що styleName є строкою
+                    if (!styleName || typeof styleName !== 'string') {
+                        console.warn('getHistoricalStyleArea: styleName is not a string:', styleName);
+                        return [];
+                    }
+                    
+                    // Фіксовані історичні ареали всіх популярних архітектурних стилів
+                    const historicalAreas = {
+                        'Готика': [
+                            { name: 'Північна Франція (Іль-де-Франс)', lat: 49.0, lng: 2.5, radius: 250 },
+                            { name: 'Англія', lat: 52.5, lng: -1.5, radius: 300 },
+                            { name: 'Німеччина', lat: 50.5, lng: 10.0, radius: 350 }
+                        ],
+                        'Готичний': [
+                            { name: 'Північна Франція (Іль-де-Франс)', lat: 49.0, lng: 2.5, radius: 250 },
+                            { name: 'Англія', lat: 52.5, lng: -1.5, radius: 300 },
+                            { name: 'Німеччина', lat: 50.5, lng: 10.0, radius: 350 }
+                        ],
+                        'Бароко': [
+                            { name: 'Рим/Італія', lat: 41.9, lng: 12.5, radius: 300 },
+                            { name: 'Австрія/Відень', lat: 48.2, lng: 16.4, radius: 250 },
+                            { name: 'Франція/Версаль', lat: 48.8, lng: 2.1, radius: 200 }
+                        ],
+                        'Ренесанс': [
+                            { name: 'Флоренція', lat: 43.77, lng: 11.25, radius: 150 },
+                            { name: 'Рим', lat: 41.9, lng: 12.5, radius: 200 },
+                            { name: 'Венеція', lat: 45.4, lng: 12.3, radius: 100 }
+                        ],
+                        'Візантійський': [
+                            { name: 'Константинополь/Стамбул', lat: 41.0, lng: 29.0, radius: 400 },
+                            { name: 'Греція', lat: 38.0, lng: 23.0, radius: 300 },
+                            { name: 'Балкани', lat: 44.0, lng: 20.0, radius: 400 }
+                        ],
+                        'Романський': [
+                            { name: 'Франція', lat: 46.0, lng: 2.0, radius: 400 },
+                            { name: 'Німеччина/Рейнланд', lat: 50.7, lng: 7.1, radius: 250 },
+                            { name: 'Іспанія/Каталонія', lat: 41.6, lng: 1.9, radius: 200 }
+                        ],
+                        'Ісламський': [
+                            { name: 'Близький Схід', lat: 31.0, lng: 35.0, radius: 600 },
+                            { name: 'Андалусія/Кордова', lat: 37.9, lng: -4.8, radius: 300 },
+                            { name: 'Північна Африка', lat: 31.0, lng: -7.0, radius: 800 }
+                        ],
+                        'Модернізм': [
+                            { name: 'Чикаго (Школа Чикаго)', lat: 41.9, lng: -87.6, radius: 200 },
+                            { name: 'Баухаус/Німеччина', lat: 51.8, lng: 10.8, radius: 300 },
+                            { name: 'Нідерланди (Де Стейл)', lat: 52.2, lng: 5.2, radius: 150 }
+                        ],
+                        'Інтернаціональний стиль': [
+                            { name: 'Нью-Йорк', lat: 40.7, lng: -74.0, radius: 200 },
+                            { name: 'Європа (Баухаус)', lat: 52.0, lng: 10.0, radius: 500 },
+                            { name: 'Глобальний', lat: 0.0, lng: 0.0, radius: 20000 }
+                        ],
+                        'Бруталізм': [
+                            { name: 'Великобританія', lat: 53.0, lng: -2.0, radius: 300 },
+                            { name: 'Франція (Ле Корбюзьє)', lat: 46.5, lng: 2.0, radius: 350 },
+                            { name: 'Східна Європа', lat: 50.0, lng: 19.0, radius: 600 }
+                        ],
+                        'Неокласицизм': [
+                            { name: 'Париж', lat: 48.9, lng: 2.3, radius: 200 },
+                            { name: 'Санкт-Петербург', lat: 59.9, lng: 30.3, radius: 250 },
+                            { name: 'Вашингтон', lat: 38.9, lng: -77.0, radius: 150 }
+                        ],
+                        'Конструктивізм': [
+                            { name: 'Москва (1920-30і рр.)', lat: 55.8, lng: 37.6, radius: 400 },
+                            { name: 'Харків (столиця УРСР)', lat: 49.9, lng: 36.2, radius: 300 },
+                            { name: 'СРСР (авангард)', lat: 55.0, lng: 40.0, radius: 1200 }
+                        ],
+                        'Радянський неокласицизм': [
+                            { name: 'Москва', lat: 55.8, lng: 37.6, radius: 600 },
+                            { name: 'Соцтабір', lat: 52.0, lng: 20.0, radius: 800 }
+                        ],
+                        'Ампір': [
+                            { name: 'Париж (Наполеонівський)', lat: 48.9, lng: 2.3, radius: 200 },
+                            { name: 'Санкт-Петербург (Російський)', lat: 59.9, lng: 30.3, radius: 250 }
+                        ],
+                        'Сталінський ампір': [
+                            { name: 'Москва (центр СРСР)', lat: 55.8, lng: 37.6, radius: 700 },
+                            { name: 'Варшава (соцтабір)', lat: 52.2, lng: 21.0, radius: 300 }
+                        ],
+                        'Ар-нуво': [
+                            { name: 'Брюссель', lat: 50.8, lng: 4.4, radius: 150 },
+                            { name: 'Париж', lat: 48.9, lng: 2.3, radius: 200 },
+                            { name: 'Відень (Сецесія)', lat: 48.2, lng: 16.4, radius: 150 }
+                        ],
+                        'Хай-тек': [
+                            { name: 'Лондон', lat: 51.5, lng: -0.1, radius: 200 },
+                            { name: 'Токіо', lat: 35.7, lng: 139.7, radius: 250 },
+                            { name: 'Кремнієва долина', lat: 37.4, lng: -122.1, radius: 150 }
+                        ],
+                        'Постмодернізм': [
+                            { name: 'Лас-Вегас', lat: 36.2, lng: -115.1, radius: 200 },
+                            { name: 'Лос-Анджелес', lat: 34.1, lng: -118.2, radius: 300 },
+                            { name: 'Нью-Йорк', lat: 40.7, lng: -74.0, radius: 200 }
+                        ],
+                        'Мінімалізм': [
+                            { name: 'Японія', lat: 36.2, lng: 138.3, radius: 400 },
+                            { name: 'Скандинавія', lat: 62.0, lng: 15.0, radius: 500 }
+                        ],
+                        'Східний': [
+                            { name: 'Китай', lat: 35.0, lng: 105.0, radius: 800 },
+                            { name: 'Японія', lat: 36.2, lng: 138.3, radius: 300 },
+                            { name: 'Корея', lat: 35.9, lng: 127.8, radius: 200 }
+                        ],
+                        'Класичний': [
+                            { name: 'Афіни', lat: 37.98, lng: 23.73, radius: 200 },
+                            { name: 'Рим', lat: 41.9, lng: 12.5, radius: 250 }
+                        ],
+                        'Деконструктивізм': [
+                            { name: 'Лос-Анджелес', lat: 34.1, lng: -118.2, radius: 200 },
+                            { name: 'Нью-Йорк', lat: 40.7, lng: -74.0, radius: 150 }
+                        ],
+                        'Сталінська архітектура': [
+                            { name: 'Москва (центр СРСР)', lat: 55.8, lng: 37.6, radius: 700 },
+                            { name: 'Варшава (соцтабір)', lat: 52.2, lng: 21.0, radius: 300 }
+                        ],
+                        'Російський ампір': [
+                            { name: 'Санкт-Петербург', lat: 59.9, lng: 30.3, radius: 300 },
+                            { name: 'Москва', lat: 55.8, lng: 37.6, radius: 400 }
+                        ]
+                    };
+                    
+                    // Шукаємо по точній назві або частковому співпадінню
+                    let areas = historicalAreas[styleName];
+                    if (!areas) {
+                        // Пробуємо знайти по частковому співпадінню
+                        for (const [key, value] of Object.entries(historicalAreas)) {
+                            if (styleName.toLowerCase().includes(key.toLowerCase()) || 
+                                key.toLowerCase().includes(styleName.toLowerCase())) {
+                                areas = value;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    console.log(`🔍 Історичні ареали для стилю "${styleName}":`, areas);
+                    return areas || [];
+                },
+                
+                async determineBuildingLocation() {
+                    console.log('📍 determineBuildingLocation викликано');
+                    console.log('analysisResults:', this.analysisResults);
+                    console.log('currentDetectedStyle:', this.currentDetectedStyle);
+                    
+                    // Визначаємо локацію будівлі за допомогою Геміні
+                    if (!this.analysisResults) {
+                        console.warn('Немає analysisResults');
+                        return;
+                    }
+                    
+                    let estimatedLocation = null;
+                    const detectedStyle = this.currentDetectedStyle;
+                    
+                    // 1. Спочатку пробуємо отримати координати з Gemini аналізу
+                    if (this.analysisResults.gemini_analysis?.location?.coordinates) {
+                        const coords = this.analysisResults.gemini_analysis.location.coordinates;
+                        const city = this.analysisResults.gemini_analysis.location.city || 'Невідоме місто';
+                        
+                        if (coords.latitude && coords.longitude && coords.latitude !== 0 && coords.longitude !== 0) {
+                            estimatedLocation = {
+                                lat: coords.latitude,
+                                lng: coords.longitude,
+                                name: city
+                            };
+                            console.log('Координати з Gemini:', estimatedLocation);
+                        }
+                    }
+                    
+                    // 2. Якщо немає координат з Gemini, пробуємо через запит
+                    if (!estimatedLocation) {
+                        let locationToQuery = null;
+                        
+                        // Спочатку пробуємо місто з Gemini
+                        if (this.analysisResults.gemini_analysis?.location?.city) {
+                            locationToQuery = this.analysisResults.gemini_analysis.location.city;
+                            console.log('Запитуємо координати для міста з Gemini:', locationToQuery);
+                        }
+                        // Потім ArchiLense локацію
+                        else if (this.analysisResults.archilense_analysis?.location && 
+                                this.analysisResults.archilense_analysis.location !== 'Невизначений регіон') {
+                            locationToQuery = this.analysisResults.archilense_analysis.location;
+                            console.log('Локація з ArchiLense:', locationToQuery);
+                        } 
+                        // В крайньому випадку - типове місто для стилю
+                        else if (detectedStyle) {
+                            locationToQuery = this.getMostLikelyLocationForStyle(detectedStyle);
+                            console.log('Локація за стилем:', locationToQuery);
+                        }
+                    
+                        if (locationToQuery && locationToQuery !== 'Невизначений регіон') {
+                            try {
+                                // Запит координат від Геміні
+                                estimatedLocation = await this.getCoordinatesFromGemini(locationToQuery);
+                            } catch (error) {
+                                console.error('Помилка отримання координат:', error);
+                            }
+                        }
+                    }
+                    
+                    // Якщо локація визначена, показуємо її
+                    if (estimatedLocation) {
+                        // Перевіряємо що карта готова перед зміною виду
+                        if (this.architecturalMap && !this.architecturalMap._container._leaflet_pos) {
+                            // Даємо час карті для повної ініціалізації
+                            setTimeout(() => {
+                                this.safeSetMapView(estimatedLocation, detectedStyle);
+                            }, 100);
+                        } else {
+                            this.safeSetMapView(estimatedLocation, detectedStyle);
+                        }
+                        
+                        this.mapInfoText = `Показано приблизне місце: ${estimatedLocation.name}`;
+                    } else {
+                        // Якщо локацію не вдалось визначити
+                        this.mapInfoText = 'Не вдалося визначити місце будівлі';
+                    }
+                },
+                
+                safeSetMapView(estimatedLocation, detectedStyle) {
+                    try {
+                        // Перевіряємо готовність карти
+                        if (!this.architecturalMap || !estimatedLocation.lat || !estimatedLocation.lng) {
+                            console.warn('Карта або координати не готові');
+                            return;
+                        }
+                        
+                        // Зупиняємо всі анімації перед зміною виду
+                        this.architecturalMap.stop();
+                        
+                        // Безпечно змінюємо вид карти без анімації
+                        this.architecturalMap.setView(
+                            [estimatedLocation.lat, estimatedLocation.lng], 
+                            10,  // Збільшуємо масштаб для міст
+                            { animate: false, duration: 0 }
+                        );
+                        
+                        // Додаємо маркер для будівлі
+                        const buildingIcon = L.divIcon({
+                            className: 'building-marker',
+                            html: '🏛️',
+                            iconSize: [25, 25],
+                            iconAnchor: [12, 12]
+                        });
+                        
+                        const buildingMarker = L.marker([estimatedLocation.lat, estimatedLocation.lng], {
+                            icon: buildingIcon
+                        }).addTo(this.architecturalMap);
+                        
+                        // Додаємо popup з інформацією
+                        const buildingInfo = `
+                            <div style="text-align: center;">
+                                <h4>${estimatedLocation.name}</h4>
+                                <p>Стиль: ${detectedStyle}</p>
+                                <p>Координати: ${estimatedLocation.lat.toFixed(4)}, ${estimatedLocation.lng.toFixed(4)}</p>
+                            </div>
+                        `;
+                        
+                        buildingMarker.bindPopup(buildingInfo).openPopup();
+                        
+                        // Додаємо круг невпевненості
+                        L.circle([estimatedLocation.lat, estimatedLocation.lng], {
+                            color: '#ff7800',
+                            fillColor: '#ff7800',
+                            fillOpacity: 0.1,
+                            radius: 50000,
+                            weight: 2,
+                            dashArray: '5, 5'
+                        }).addTo(this.architecturalMap)
+                        .bindPopup('Зона можливого розташування (±50км)');
+                        
+                    } catch (error) {
+                        console.error('Помилка зміни виду карти:', error);
+                        this.mapInfoText = 'Помилка відображення місця будівлі';
+                        
+                        // Як крайній засіб - переініціалізація
+                        this.reinitializeMap();
+                    }
+                },
+                
+                async getCoordinatesFromGemini(locationName) {
+                    // Перевіряємо на невизначені значення
+                    if (!locationName || locationName === 'Невизначений регіон' || 
+                        locationName === 'Unknown' || locationName === 'undefined') {
+                        return null;
+                    }
+                    
+                    // Використовуємо API endpoint для отримання координат від Геміні
+                    try {
+                        const response = await fetch('/get-coordinates', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ location: locationName })
+                        });
+                        
+                        if (!response.ok) {
+                            console.warn(`Координати недоступні для: ${locationName}`);
+                            return this.getFallbackCoordinates(locationName);
+                        }
+                        
+                        const data = await response.json();
+                        
+                        if (data.status === 'success' && data.coordinates) {
+                            return {
+                                lat: data.coordinates.lat,
+                                lng: data.coordinates.lon,
+                                name: locationName
+                            };
+                        }
+                    } catch (error) {
+                        console.error('Помилка запиту координат:', error);
+                    }
+                    
+                    // Fallback на статичні координати якщо API недоступний
+                    return this.getFallbackCoordinates(locationName);
+                },
+                
+                getFallbackCoordinates(locationName) {
+                    // Статичні координати як запасний варіант
+                    const fallbackMap = {
+                        'Франція': { lat: 48.8566, lng: 2.3522, name: 'Париж, Франція' },
+                        'Італія': { lat: 41.9028, lng: 12.4964, name: 'Рим, Італія' },
+                        'Париж': { lat: 48.8566, lng: 2.3522, name: 'Париж' },
+                        'Москва': { lat: 55.7558, lng: 37.6173, name: 'Москва' },
+                        'Лондон': { lat: 51.5074, lng: -0.1278, name: 'Лондон' },
+                        'Нью-Йорк': { lat: 40.7128, lng: -74.0060, name: 'Нью-Йорк' },
+                        'Флоренція': { lat: 43.7696, lng: 11.2558, name: 'Флоренція' }
+                    };
+                    
+                    if (fallbackMap[locationName]) {
+                        return fallbackMap[locationName];
+                    }
+                    
+                    // Пошук часткового співпадіння
+                    for (const [key, value] of Object.entries(fallbackMap)) {
+                        if (key.toLowerCase().includes(locationName.toLowerCase()) ||
+                            locationName.toLowerCase().includes(key.toLowerCase())) {
+                            return value;
+                        }
+                    }
+                    
+                    // За замовчуванням - Париж
+                    return { lat: 48.8566, lng: 2.3522, name: locationName || 'Невизначене місце' };
+                },
+                
+                getMostLikelyLocationForStyle(styleName) {
+                    // Логіка визначення найбільш ймовірного міста для стилю
+                    const styleLocationMapping = {
+                        // Європейські стилі
+                        'Готика': 'Париж',
+                        'Gothic': 'Париж',
+                        'Бароко': 'Рим', 
+                        'Baroque': 'Рим',
+                        'Неокласицизм': 'Париж',
+                        'Neoclassical': 'Париж',
+                        'Ренесанс': 'Флоренція',
+                        'Renaissance': 'Флоренція',
+                        'Ар-нуво': 'Брюссель',
+                        'Art Nouveau': 'Брюссель',
+                        'Модерн': 'Відень',
+                        'Романський': 'Рим',
+                        'Romanesque': 'Рим',
+                        'Візантійський': 'Стамбул',
+                        'Byzantine': 'Стамбул',
+                        
+                        // Сучасні стилі
+                        'Модернізм': 'Нью-Йорк',
+                        'Modern': 'Нью-Йорк',
+                        'Modernism': 'Нью-Йорк',
+                        'Бруталізм': 'Лондон',
+                        'Brutalist': 'Лондон',
+                        'Brutalism': 'Лондон',
+                        'Мінімалізм': 'Токіо',
+                        'Minimalist': 'Токіо',
+                        'Хай-тек': 'Лондон',
+                        'High-tech': 'Лондон',
+                        'Постмодернізм': 'Лас-Вегас',
+                        'Postmodern': 'Лас-Вегас',
+                        'Деконструктивізм': 'Більбао',
+                        'Deconstructivist': 'Більбао',
+                        
+                        // Радянські/Російські стилі
+                        'Конструктивізм': 'Москва',
+                        'Constructivist': 'Москва',
+                        'Сталінський ампір': 'Москва',
+                        'Stalinist': 'Москва',
+                        'Російський ампір': 'Санкт-Петербург',
+                        
+                        // Інші регіональні стилі
+                        'Ісламський': 'Стамбул',
+                        'Islamic': 'Стамбул',
+                        'Китайський': 'Пекін',
+                        'Chinese': 'Пекін',
+                        'Японський': 'Токіо',
+                        'Japanese': 'Токіо',
+                        'Вікторіанський': 'Лондон',
+                        'Victorian': 'Лондон',
+                        'Колоніальний': 'Філадельфія',
+                        'Colonial': 'Філадельфія',
+                        
+                        // Індустріальні стилі
+                        'Індустріальний': 'Детройт',
+                        'Industrial': 'Детройт',
+                        'Фабричний': 'Манчестер',
+                        
+                        // Сучасна архітектура
+                        'Сучасний': 'Дубай',
+                        'Contemporary': 'Дубай',
+                        'Параметричний': 'Дубай',
+                        'Parametric': 'Дубай'
+                    };
+                    
+                    // Пошук по точній назві
+                    let location = styleLocationMapping[styleName];
+                    
+                    // Якщо не знайдено, пошук по ключовим словам
+                    if (!location) {
+                        const styleKey = Object.keys(styleLocationMapping).find(key => 
+                            styleName.toLowerCase().includes(key.toLowerCase()) ||
+                            key.toLowerCase().includes(styleName.toLowerCase())
+                        );
+                        location = styleKey ? styleLocationMapping[styleKey] : null;
+                    }
+                    
+                    // Fallback на регіон якщо місто не знайдено
+                    return location || 'Західна Європа';
+                },
+                
+                clearMapLayers() {
+                    // Безпечно очищаємо всі шари крім базової карти
+                    if (!this.architecturalMap) return;
+                    
+                    try {
+                        // Зупиняємо всі анімації та переходи
+                        if (this.architecturalMap.stop) {
+                            this.architecturalMap.stop();
+                        }
+                        
+                        // Закриваємо всі попапи перед очищенням
+                        this.architecturalMap.closePopup();
+                        
+                        // Закриваємо всі тултіпи
+                        if (this.architecturalMap._tooltip && this.architecturalMap._tooltip.close) {
+                            this.architecturalMap._tooltip.close();
+                        }
+                        
+                        // Отримуємо список всіх шарів для видалення
+                        const layersToRemove = [];
+                        
+                        this.architecturalMap.eachLayer(layer => {
+                            // Зберігаємо тільки TileLayer (базову карту)
+                            if (!(layer instanceof L.TileLayer)) {
+                                layersToRemove.push(layer);
+                            }
+                        });
+                        
+                        // Видаляємо шари один за одним безпечно
+                        layersToRemove.forEach(layer => {
+                            try {
+                                // Спочатку закриваємо попапи та тултіпи шару
+                                if (layer.closePopup && typeof layer.closePopup === 'function') {
+                                    layer.closePopup();
+                                }
+                                if (layer.closeTooltip && typeof layer.closeTooltip === 'function') {
+                                    layer.closeTooltip();
+                                }
+                                if (layer._popup) {
+                                    layer._popup = null;
+                                }
+                                if (layer._tooltip) {
+                                    layer._tooltip = null;
+                                }
+                                
+                                // Тепер безпечно видаляємо шар
+                                this.architecturalMap.removeLayer(layer);
+                                
+                            } catch (layerError) {
+                                console.warn('Помилка видалення шару:', layerError);
+                                // Продовжуємо з наступним шаром
+                            }
+                        });
+                        
+                    } catch (error) {
+                        console.error('Помилка очищення карти:', error);
+                        // У випадку критичної помилки - повна переініціалізація
+                        this.reinitializeMap();
+                    }
+                },
+                
+                reinitializeMap() {
+                    // Повна переініціалізація карти як крайній засіб
+                    console.warn('Переініціалізація карти...');
+                    
+                    try {
+                        const currentCenter = this.architecturalMap ? this.architecturalMap.getCenter() : null;
+                        const currentZoom = this.architecturalMap ? this.architecturalMap.getZoom() : 4;
+                        
+                        // Уничтожаємо стару карту
+                        if (this.architecturalMap) {
+                            this.architecturalMap.off();
+                            this.architecturalMap.remove();
+                            this.architecturalMap = null;
+                        }
+                        
+                        // Очищаємо контейнер
+                        const mapContainer = document.getElementById('architecturalMap');
+                        if (mapContainer) {
+                            mapContainer.innerHTML = '';
+                        }
+                        
+                        // Створюємо нову карту
+                        setTimeout(() => {
+                            this.architecturalMap = L.map('architecturalMap', {
+                                center: currentCenter || [50.0, 10.0],
+                                zoom: currentZoom,
+                                zoomControl: true,
+                                scrollWheelZoom: true,
+                                zoomAnimation: false  // Вимикаємо анімації зуму
+                            });
+                            
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                attribution: '© OpenStreetMap contributors',
+                                maxZoom: 18
+                            }).addTo(this.architecturalMap);
+                            
+                            console.log('Карта переініціалізована');
+                        }, 100);
+                        
+                    } catch (error) {
+                        console.error('Помилка переініціалізації карти:', error);
+                    }
+                },
+                
+                async loadWikipediaLinks() {
+                    // Отримуємо посилання на українську Вікіпедію
+                    if (!this.analysisResults) return;
+                    
+                    const currentStyle = this.analysisResults.architectural_style?.top_prediction ||
+                                       this.analysisResults.archilense_analysis?.style;
+                    
+                    if (currentStyle) {
+                        // Маппінг стилів на українські URL Вікіпедії
+                        const styleToWikipedia = {
+                            // Українські назви
+                            'Готика': 'https://uk.wikipedia.org/wiki/Готична_архітектура',
+                            'Бароко': 'https://uk.wikipedia.org/wiki/Бароко_(архітектура)',
+                            'Ренесанс': 'https://uk.wikipedia.org/wiki/Ренесансна_архітектура',
+                            'Модернізм': 'https://uk.wikipedia.org/wiki/Модернізм_(архітектура)',
+                            'Класицизм': 'https://uk.wikipedia.org/wiki/Класицизм',
+                            'Візантійський': 'https://uk.wikipedia.org/wiki/Візантійська_архітектура',
+                            'Романський': 'https://uk.wikipedia.org/wiki/Романська_архітектура',
+                            'Модерн': 'https://uk.wikipedia.org/wiki/Модерн',
+                            'Бруталізм': 'https://uk.wikipedia.org/wiki/Бруталізм',
+                            'Неокласицизм': 'https://uk.wikipedia.org/wiki/Неокласицизм',
+                            'Постмодернізм': 'https://uk.wikipedia.org/wiki/Постмодернізм',
+                            'Конструктивізм': 'https://uk.wikipedia.org/wiki/Конструктивізм',
+                            'Мінімалізм': 'https://uk.wikipedia.org/wiki/Мінімалізм_(архітектура)',
+                            'Хай-тек': 'https://uk.wikipedia.org/wiki/Хай-тек',
+                            'Ісламський': 'https://uk.wikipedia.org/wiki/Ісламська_архітектура',
+                            'Східний': 'https://uk.wikipedia.org/wiki/Східна_архітектура',
+                            
+                            // Англійські назви з моделей
+                            'Gothic': 'https://uk.wikipedia.org/wiki/Готична_архітектура',
+                            'Baroque': 'https://uk.wikipedia.org/wiki/Бароко_(архітектура)',
+                            'Renaissance': 'https://uk.wikipedia.org/wiki/Ренесансна_архітектура',
+                            'Modern': 'https://uk.wikipedia.org/wiki/Модернізм_(архітектура)',
+                            'Classical': 'https://uk.wikipedia.org/wiki/Класицизм',
+                            'Byzantine': 'https://uk.wikipedia.org/wiki/Візантійська_архітектура',
+                            'Romanesque': 'https://uk.wikipedia.org/wiki/Романська_архітектура',
+                            'Art Nouveau': 'https://uk.wikipedia.org/wiki/Модерн',
+                            'Brutalist': 'https://uk.wikipedia.org/wiki/Бруталізм',
+                            'Neoclassical': 'https://uk.wikipedia.org/wiki/Неокласицизм',
+                            'Postmodern': 'https://uk.wikipedia.org/wiki/Постмодернізм',
+                            'Constructivist': 'https://uk.wikipedia.org/wiki/Конструктивізм',
+                            'Minimalist': 'https://uk.wikipedia.org/wiki/Мінімалізм_(архітектура)',
+                            'High-tech': 'https://uk.wikipedia.org/wiki/Хай-тек',
+                            'Islamic': 'https://uk.wikipedia.org/wiki/Ісламська_архітектура',
+                            'Modernist': 'https://uk.wikipedia.org/wiki/Модернізм_(архітектура)',
+                            'Contemporary': 'https://uk.wikipedia.org/wiki/Сучасна_архітектура',
+                            'Victorian': 'https://uk.wikipedia.org/wiki/Вікторіанська_архітектура',
+                            'Art Deco': 'https://uk.wikipedia.org/wiki/Ар-деко',
+                            'International Style': 'https://uk.wikipedia.org/wiki/Міжнародний_стиль',
+                            'Stalinist architecture': 'https://uk.wikipedia.org/wiki/Сталінська_архітектура',
+                            'Сталінська архітектура': 'https://uk.wikipedia.org/wiki/Сталінська_архітектура',
+                            'Радянський монументалізм': 'https://uk.wikipedia.org/wiki/Сталінська_архітектура',
+                            'Сталінський ампір': 'https://uk.wikipedia.org/wiki/Сталінський_ампір',
+                            'Soviet architecture': 'https://uk.wikipedia.org/wiki/Радянська_архітектура',
+                            'Російський ампір': 'https://uk.wikipedia.org/wiki/Російський_ампір',
+                            
+                            // Скорочені форми
+                            'classical_revival_architecture': 'https://uk.wikipedia.org/wiki/Неокласицизм',
+                            'queen_anne_architecture': 'https://uk.wikipedia.org/wiki/Вікторіанська_архітектура',
+                            'tudor_cottage_architecture': 'https://uk.wikipedia.org/wiki/Тюдорівський_стиль'
+                        };
+                        
+                        this.wikipediaLinks[currentStyle] = styleToWikipedia[currentStyle] || 
+                            `https://uk.wikipedia.org/wiki/${encodeURIComponent(currentStyle)}`;
+                    }
+                },
+                
+                initMap() {
+                    this.$nextTick(() => {
+                        if (this.analysisResults && this.analysisResults.geographical_data) {
+                            this.createArchitecturalMap();
+                        }
+                    });
+                },
+                
+                createArchitecturalMap() {
+                    // Очистить существующую карту
+                    if (this.architecturalMap) {
+                        this.architecturalMap.remove();
+                    }
+                    
+                    const geoData = this.analysisResults.geographical_data;
+                    if (!geoData || (!geoData.regions?.length && !geoData.famous_buildings?.length)) {
+                        return;
+                    }
+                    
+                    // Создать карту
+                    this.architecturalMap = L.map('architectural-map').setView([40, 0], 2);
+                    
+                    // Добавить базовый слой
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(this.architecturalMap);
+                    
+                    const bounds = [];
+                    
+                    // Добавить регионы (окружности)
+                    if (geoData.regions && geoData.regions.length > 0) {
+                        geoData.regions.forEach(region => {
+                            const center = [region.center[0], region.center[1]];
+                            const radius = region.radius_km * 1000; // конвертировать в метры
+                            
+                            const circle = L.circle(center, {
+                                radius: radius,
+                                color: '#BC6D4F',
+                                fillColor: '#9D331F',
+                                fillOpacity: 0.3,
+                                weight: 2
+                            }).addTo(this.architecturalMap);
+                            
+                            circle.bindPopup(`
+                                <strong>${region.name}</strong><br>
+                                ${region.description}
+                            `);
+                            
+                            bounds.push(center);
+                        });
+                    }
+                    
+                    // Добавить знаменитые здания (маркеры)
+                    if (geoData.famous_buildings && geoData.famous_buildings.length > 0) {
+                        geoData.famous_buildings.forEach(building => {
+                            const marker = L.marker([building.location[0], building.location[1]], {
+                                icon: L.divIcon({
+                                    className: 'building-marker',
+                                    html: '🏛️',
+                                    iconSize: [20, 20],
+                                    iconAnchor: [10, 10]
+                                })
+                            }).addTo(this.architecturalMap);
+                            
+                            marker.bindPopup(`
+                                <div style="min-width: 200px;">
+                                    <strong>${building.name}</strong><br>
+                                    <em>${building.country}</em><br>
+                                    ${building.description}
+                                </div>
+                            `);
+                            
+                            bounds.push([building.location[0], building.location[1]]);
+                        });
+                    }
+                    
+                    // Подогнать карту под все объекты
+                    if (bounds.length > 0) {
+                        this.architecturalMap.fitBounds(bounds, { padding: [20, 20] });
+                    }
+                },
+                
+                openWikipedia(style) {
+                    if (this.wikipediaLinks[style]) {
+                        window.open(this.wikipediaLinks[style], '_blank');
+                    }
+                }
+            }
+            }).mount('#app');
+        });
+    </script>
+</body>
+</html>

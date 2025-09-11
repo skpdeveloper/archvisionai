@@ -1,0 +1,39 @@
+# FastAPI and server dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# ML and AI libraries
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.35.0
+huggingface-hub>=0.19.0
+numpy>=1.24.0
+
+# Image processing and computer vision
+Pillow>=10.0.0
+opencv-python>=4.8.0
+
+# HTTP clients for API calls
+aiohttp>=3.9.0
+requests>=2.31.0
+
+# Environment and configuration
+python-dotenv>=1.0.0
+
+# Async and utilities
+aiofiles>=23.2.0
+
+# Optional: GPU support (uncomment if using CUDA)
+# torch>=2.0.0+cu118
+# torchvision>=0.15.0+cu118
+# torchaudio>=2.0.0+cu118
+# --index-url https://download.pytorch.org/whl/cu118
+
+# Additional ML models for specialized tasks
+timm>=0.9.0  # For advanced vision models
+sentence-transformers>=2.2.0  # For semantic similarity
+
+# Google AI integration
+google-generativeai>=0.3.0  # Google Gemini API
+google-auth>=2.0.0  # Google authentication

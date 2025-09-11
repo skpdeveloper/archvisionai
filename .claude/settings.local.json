@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "WebSearch",
+      "Bash(del \"archvision_analysis.log\")",
+      "Bash(rm:*)",
+      "Bash(curl:*)",
+      "Bash(dir:*)",
+      "WebFetch(domain:ru.wikipedia.org)",
+      "Bash(timeout:*)",
+      "Bash(taskkill:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(cmd /c:*)",
+      "Bash(set KAGGLE_USERNAME=your_kaggle_username)",
+      "Bash(set KAGGLE_KEY=your_kaggle_api_key)",
+      "Bash(md datasetsarchitectural_stylestraingothic)",
+      "Bash(md datasetsarchitectural_stylestrainbaroque)",
+      "Bash(md datasetsarchitectural_stylestrainmodern)",
+      "Bash(pip install:*)",
+      "Bash(kaggle datasets list:*)",
+      "Bash(kaggle datasets download:*)",
+      "Bash(unzip:*)",
+      "Bash(cp:*)",
+      "Bash(set KAGGLE_CONFIG_DIR=.)",
+      "Bash(del architectural-styles-dataset.zip)",
+      "Bash(md dataset)",
+      "Bash(md models)",
+      "Bash(move fast_model.pth models )",
+      "Bash(move class_mapping.json models )",
+      "Bash(move ukrainian_labels.py models)",
+      "Bash(grep:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

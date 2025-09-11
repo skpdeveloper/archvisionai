@@ -1,0 +1,178 @@
+Detailed Class Statistics:
+==================================================
+
+Class: Achaemenid architecture
+  Valid Images: 784
+  Corrupted Images: 0
+  Average Size: [690.81887755 544.08928571]
+  Min Size: [135 150]
+  Max Size: [1000 1000]
+
+Class: American Foursquare architecture
+  Valid Images: 724
+  Corrupted Images: 0
+  Average Size: [731.54696133 554.22099448]
+  Min Size: [150 150]
+  Max Size: [1000 1000]
+
+Class: American craftsman style
+  Valid Images: 728
+  Corrupted Images: 0
+  Average Size: [725.40659341 511.98351648]
+  Min Size: [150 135]
+  Max Size: [1000  990]
+
+Class: Ancient Egyptian architecture
+  Valid Images: 812
+  Corrupted Images: 0
+  Average Size: [745.9408867  533.10591133]
+  Min Size: [200 167]
+  Max Size: [1000 1000]
+
+Class: Art Deco architecture
+  Valid Images: 1132
+  Corrupted Images: 0
+  Average Size: [737.51060071 590.69434629]
+  Min Size: [164 161]
+  Max Size: [1000 1000]
+
+Class: Art Nouveau architecture
+  Valid Images: 1230
+  Corrupted Images: 0
+  Average Size: [697.29756098 600.93333333]
+  Min Size: [200 200]
+  Max Size: [1000 1000]
+
+Class: Baroque architecture
+  Valid Images: 912
+  Corrupted Images: 0
+  Average Size: [664.12280702 594.80921053]
+  Min Size: [149 163]
+  Max Size: [1000 1000]
+
+Class: Bauhaus architecture
+  Valid Images: 630
+  Corrupted Images: 0
+  Average Size: [817.23809524 601.28888889]
+  Min Size: [220 139]
+  Max Size: [1000 1000]
+
+Class: Beaux-Arts architecture
+  Valid Images: 848
+  Corrupted Images: 0
+  Average Size: [718.48584906 554.39858491]
+  Min Size: [157 160]
+  Max Size: [1000 1000]
+
+Class: Byzantine architecture
+  Valid Images: 626
+  Corrupted Images: 0
+  Average Size: [726.91054313 525.39936102]
+  Min Size: [140 159]
+  Max Size: [1000 1000]
+
+Class: Chicago school architecture
+  Valid Images: 556
+  Corrupted Images: 0
+  Average Size: [592.34172662 586.87769784]
+  Min Size: [170 185]
+  Max Size: [1000 1000]
+
+Class: Colonial architecture
+  Valid Images: 960
+  Corrupted Images: 0
+  Average Size: [754.30416667 565.64375   ]
+  Min Size: [215 155]
+  Max Size: [1000 1000]
+
+Class: Deconstructivism
+  Valid Images: 670
+  Corrupted Images: 0
+  Average Size: [689.29253731 532.53731343]
+  Min Size: [194 157]
+  Max Size: [1000 1000]
+
+Class: Edwardian architecture
+  Valid Images: 560
+  Corrupted Images: 0
+  Average Size: [677.24285714 528.51071429]
+  Min Size: [155 165]
+  Max Size: [1000 1000]
+
+Class: Georgian architecture
+  Valid Images: 762
+  Corrupted Images: 0
+  Average Size: [974.27034121 766.24409449]
+  Min Size: [178 134]
+  Max Size: [4272 4272]
+
+Class: Gothic architecture
+  Valid Images: 662
+  Corrupted Images: 0
+  Average Size: [938.66163142 933.5347432 ]
+  Min Size: [149 201]
+  Max Size: [4288 4000]
+
+Class: Greek Revival architecture
+  Valid Images: 1046
+  Corrupted Images: 0
+  Average Size: [717.5793499 557.3250478]
+  Min Size: [165 146]
+  Max Size: [1000 1000]
+
+Class: International style
+  Valid Images: 834
+  Corrupted Images: 0
+  Average Size: [581.558753   553.11990408]
+  Min Size: [144 150]
+  Max Size: [1000 1000]
+
+Class: Novelty architecture
+  Valid Images: 764
+  Corrupted Images: 0
+  Average Size: [660.34031414 573.05759162]
+  Min Size: [115  90]
+  Max Size: [1000 1000]
+
+Class: Palladian architecture
+  Valid Images: 686
+  Corrupted Images: 0
+  Average Size: [729.01749271 524.49562682]
+  Min Size: [200 125]
+  Max Size: [1000 1000]
+
+Class: Postmodern architecture
+  Valid Images: 644
+  Corrupted Images: 0
+  Average Size: [614.91614907 612.52173913]
+  Min Size: [127  80]
+  Max Size: [1000 1000]
+
+Class: Queen Anne architecture
+  Valid Images: 1440
+  Corrupted Images: 0
+  Average Size: [739.95694444 580.        ]
+  Min Size: [200 132]
+  Max Size: [1000 1000]
+
+Class: Romanesque architecture
+  Valid Images: 602
+  Corrupted Images: 0
+  Average Size: [719.81063123 652.60797342]
+  Min Size: [218 149]
+  Max Size: [2136 3008]
+
+Class: Russian Revival architecture
+  Valid Images: 704
+  Corrupted Images: 0
+  Average Size: [635.89488636 579.20738636]
+  Min Size: [ 90 120]
+  Max Size: [1000 1000]
+
+Class: Tudor Revival architecture
+  Valid Images: 910
+  Corrupted Images: 0
+  Average Size: [760.4967033  553.43956044]
+  Min Size: [150 150]
+  Max Size: [1000 1000]
+
